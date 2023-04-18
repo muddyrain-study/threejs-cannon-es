@@ -19,7 +19,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 3, 5);
+camera.position.z = 3;
 
 // 初始化渲染器
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -36,27 +36,13 @@ const sphereShape = new CANNON.Sphere(0.5)
 const sphereBody = new CANNON.Body({
   mass: 1,
   shape: sphereShape,
-  position: new CANNON.Vec3(0, 5, 0),
+  position: new CANNON.Vec3(0, 5, 0)
 })
 // 将刚体添加到物理世界
 world.addBody(sphereBody)
 
-// 创建一个物理世界的平面
-const planeShape = new CANNON.Box(new CANNON.Vec3(5, 0.1, 5))
-// 创建一个刚体
-const planeBody = new CANNON.Body({
-  mass: 0,
-  shape: planeShape,
-  position: new CANNON.Vec3(0, 0, 0),
-  type: CANNON.Body.STATIC
 
-})
-planeBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), 0.1)
-// 将刚体添加到物理世界
-world.addBody(planeBody)
-
-
-// 创建一个球体几何体 
+// 创建一个球体几何体
 const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
 // 创建一个球体材质 
 const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -65,30 +51,26 @@ const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
 // 将网格添加到3D场景
 scene.add(sphereMesh);
 
-// 创建一个平面几何体
-// const planeGeometry = new THREE.PlaneGeometry(10, 10);
-const planeGeometry = new THREE.BoxGeometry(10, 0.2, 10);
-// 创建一个平面材质
-const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-// 创建一个平面网格
-const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-// x轴旋转90度
-planeMesh.rotation.x = 0.1;
-// 将网格添加到3D场景
-scene.add(planeMesh);
+// // 创建一个平面几何体
+// // const planeGeometry = new THREE.PlaneGeometry(10, 10);
+// const planeGeometry = new THREE.BoxGeometry(10, 0.2, 10);
+// // 创建一个平面材质
+// const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+// // 创建一个平面网格
+// const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+// // x轴旋转90度
+// planeMesh.rotation.x = 0.1;
+// // 将网格添加到3D场景
+// scene.add(planeMesh);
 
 // 渲染
 let clock = new THREE.Clock();
-const axesHelper = new THREE.AxesHelper(5)
-scene.add(axesHelper)
 function animate() {
   let delta = clock.getDelta();
-  world.step(1 / 60, delta);
-  // 更新球体网络的位置和旋转
+  world.step(1 / 60);
   sphereMesh.position.copy(sphereBody.position);
   sphereMesh.quaternion.copy(sphereBody.quaternion);
-  // 更新平面网络的位置和旋转
-  // planeMesh.position.copy(planeBody.position);
+
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
