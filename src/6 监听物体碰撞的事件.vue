@@ -10,6 +10,7 @@ import Stats from 'three/addons/libs/stats.module.js';
 
 // 创建物理世界
 const world = new CANNON.World();
+
 world.gravity.set(0, -9.8, 0)
 // 初始化3D场景
 const scene = new THREE.Scene();
