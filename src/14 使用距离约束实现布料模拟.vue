@@ -43,73 +43,79 @@ const GROUP4 = 8
 let phyMeshes = []
 let meshes = []
 
+const boxMaterialCon = new CANNON.Material("boxMaterial")
+boxMaterialCon.friction = 0
+boxMaterialCon.restitution = 0.1
 
-// 创建固定的body
-const fixedBody = new CANNON.Body({
+
+const rows = 15
+const cols = 15
+const bodies = {
+}
+
+const particleShape = new CANNON.Particle()
+
+for (let i = 0; i < rows; i++) {
+  for (let j = 0; j < cols; j++) {
+    // const boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5))
+    const boxBody = new CANNON.Body({
+      mass: 0.5,
+      shape: particleShape,
+      // material: boxMaterialCon,
+      position: new CANNON.Vec3(
+        i - cols * 0.5, 10, j - rows * 0.5
+      ),
+    })
+    world.addBody(boxBody)
+    phyMeshes.push(boxBody)
+    bodies[`${[i]}-${[j]}`] = boxBody
+
+    const boxMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.3, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    )
+    boxMesh.position.set(i - cols * 0.5, 10, j - rows * 0.5)
+    meshes.push(boxMesh)
+    scene.add(boxMesh)
+  }
+}
+
+
+for (let i = 0; i < rows; i++) {
+  for (let j = 0; j < cols; j++) {
+    const body = bodies[`${[i]}-${[j]}`]
+    if (i > 0) {
+      const body2 = bodies[`${[i - 1]}-${[j]}`]
+      const constraint = new CANNON.DistanceConstraint(body, body2, 1)
+      world.addConstraint(constraint)
+    }
+    if (j > 0) {
+      const body2 = bodies[`${[i]}-${[j - 1]}`]
+      const constraint = new CANNON.DistanceConstraint(body, body2, 1)
+      world.addConstraint(constraint)
+    }
+  }
+}
+
+// 创建物理球
+const sphereShape = new CANNON.Sphere(5)
+const sphereBody = new CANNON.Body({
   mass: 0,
-  position: new CANNON.Vec3(0, 10, 0),
-});
-// 设置box形状
-const fixedShape = new CANNON.Box(new CANNON.Vec3(2.5, 2.5, 0.25));
-fixedBody.addShape(fixedShape);
-// 设置body类型为静态
-fixedBody.type = CANNON.Body.STATIC;
-// 将body添加到物理世界
-world.addBody(fixedBody);
-phyMeshes.push(fixedBody);
+  shape: sphereShape,
+  material: boxMaterialCon,
+  position: new CANNON.Vec3(
+    0, 0, 0
+  ),
+})
+world.addBody(sphereBody)
+phyMeshes.push(sphereBody)
 
-//threejs的box
-const fixedMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(5, 5, 0.5),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-);
-fixedMesh.position.copy(fixedBody.position);
-fixedMesh.quaternion.copy(fixedBody.quaternion);
-meshes.push(fixedMesh);
-scene.add(fixedMesh);
-
-// 创建移动的body
-const moveBody = new CANNON.Body({
-  mass: 1,
-  position: new CANNON.Vec3(0, 4, 0),
-});
-// 设置box形状
-moveBody.addShape(fixedShape);
-// 将body添加到物理世界
-world.addBody(moveBody);
-phyMeshes.push(moveBody);
-
-//threejs的box
-const moveMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(5, 5, 0.5),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-);
-moveMesh.position.copy(moveBody.position);
-moveMesh.quaternion.copy(moveBody.quaternion);
-meshes.push(moveMesh);
-scene.add(moveMesh);
-
-// 创建铰链约束
-const hingeConstraint = new CANNON.HingeConstraint(fixedBody, moveBody, {
-  pivotA: new CANNON.Vec3(0, -3, 0),
-  pivotB: new CANNON.Vec3(0, 3, 0),
-  axisA: new CANNON.Vec3(1, 0, 0),
-  axisB: new CANNON.Vec3(1, 0, 0),
-  // collideConnected: true,
-});
-world.addConstraint(hingeConstraint);
-
-window.addEventListener("click", () => {
-  // 创建一个力
-  // const force = new CANNON.Vec3(0, 0, -100);
-  // // 应用力
-  // moveBody.applyForce(force, moveBody.position);
-  // 启用马达
-  hingeConstraint.enableMotor();
-  // 设置马达速度
-  hingeConstraint.setMotorSpeed(1000);
-});
-
+const sphereGeometry = new THREE.SphereGeometry(5, 32, 32)
+const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial)
+sphereMesh.position.set(0, 0, 0)
+scene.add(sphereMesh)
+meshes.push(sphereMesh)
 
 // 渲染
 let clock = new THREE.Clock();

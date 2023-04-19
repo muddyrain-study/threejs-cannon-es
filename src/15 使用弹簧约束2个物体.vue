@@ -43,73 +43,62 @@ const GROUP4 = 8
 let phyMeshes = []
 let meshes = []
 
+const boxMaterialCon = new CANNON.Material("boxMaterial")
+boxMaterialCon.friction = 0
+boxMaterialCon.restitution = 0.1
 
-// 创建固定的body
-const fixedBody = new CANNON.Body({
+// 创建1个固定的静态球体
+const sphereShape = new CANNON.Sphere(0.2);
+const sphereBody = new CANNON.Body({
   mass: 0,
+  shape: sphereShape,
   position: new CANNON.Vec3(0, 10, 0),
+  type: CANNON.Body.STATIC,
 });
-// 设置box形状
-const fixedShape = new CANNON.Box(new CANNON.Vec3(2.5, 2.5, 0.25));
-fixedBody.addShape(fixedShape);
-// 设置body类型为静态
-fixedBody.type = CANNON.Body.STATIC;
-// 将body添加到物理世界
-world.addBody(fixedBody);
-phyMeshes.push(fixedBody);
+world.addBody(sphereBody);
+phyMeshes.push(sphereBody);
 
-//threejs的box
-const fixedMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(5, 5, 0.5),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-);
-fixedMesh.position.copy(fixedBody.position);
-fixedMesh.quaternion.copy(fixedBody.quaternion);
-meshes.push(fixedMesh);
-scene.add(fixedMesh);
+const sphereGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+sphereMesh.position.copy(sphereBody.position);
+meshes.push(sphereMesh);
+scene.add(sphereMesh);
 
-// 创建移动的body
-const moveBody = new CANNON.Body({
+// 创建1个立方体
+const boxShape = new CANNON.Box(new CANNON.Vec3(1, 1, 0.3));
+const boxBody = new CANNON.Body({
   mass: 1,
-  position: new CANNON.Vec3(0, 4, 0),
+  shape: boxShape,
+  position: new CANNON.Vec3(0, 6, 0),
 });
-// 设置box形状
-moveBody.addShape(fixedShape);
-// 将body添加到物理世界
-world.addBody(moveBody);
-phyMeshes.push(moveBody);
+world.addBody(boxBody);
+phyMeshes.push(boxBody);
 
-//threejs的box
-const moveMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(5, 5, 0.5),
-  new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-);
-moveMesh.position.copy(moveBody.position);
-moveMesh.quaternion.copy(moveBody.quaternion);
-meshes.push(moveMesh);
-scene.add(moveMesh);
+const boxGeometry = new THREE.BoxGeometry(2, 2, 0.6);
+const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+boxMesh.position.copy(boxBody.position);
+meshes.push(boxMesh);
+scene.add(boxMesh);
 
-// 创建铰链约束
-const hingeConstraint = new CANNON.HingeConstraint(fixedBody, moveBody, {
-  pivotA: new CANNON.Vec3(0, -3, 0),
-  pivotB: new CANNON.Vec3(0, 3, 0),
-  axisA: new CANNON.Vec3(1, 0, 0),
-  axisB: new CANNON.Vec3(1, 0, 0),
-  // collideConnected: true,
+// 创建1个弹簧拉住立方体
+const spring = new CANNON.Spring(boxBody, sphereBody, {
+  // 弹簧的长度
+  restLength: 2,
+  // 弹簧的刚度
+  stiffness: 100,
+  // 弹簧的阻尼
+  damping: 1,
+  // 弹簧的锚点
+  localAnchorA: new CANNON.Vec3(0, 0, 0),
+  localAnchorB: new CANNON.Vec3(-1, 1, 0),
 });
-world.addConstraint(hingeConstraint);
-
-window.addEventListener("click", () => {
-  // 创建一个力
-  // const force = new CANNON.Vec3(0, 0, -100);
-  // // 应用力
-  // moveBody.applyForce(force, moveBody.position);
-  // 启用马达
-  hingeConstraint.enableMotor();
-  // 设置马达速度
-  hingeConstraint.setMotorSpeed(1000);
+// 通过计算每一step之前获取弹簧的作用力，并且应用弹簧的作用力
+world.addEventListener("preStep", () => {
+  // 应用弹簧的作用力
+  spring.applyForce();
 });
-
 
 // 渲染
 let clock = new THREE.Clock();
