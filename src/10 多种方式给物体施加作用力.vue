@@ -23,7 +23,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 10, 20);
+camera.position.set(0, 5, 10);
 
 // 初始化渲染器
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -80,77 +80,29 @@ let phyMeshes = []
 // 渲染世界物体
 let meshs = []
 
-window.addEventListener('click', () => {
-  // 创建一个物理球
-  const sphereShape = new CANNON.Sphere(0.5)
-  const sphereBody = new CANNON.Body({
-    mass: 1,
-    shape: sphereShape,
-    material: boxMaterialCon,
-    position: new CANNON.Vec3(0, 10, 3),
-    collisionFilterGroup: GROUP1,
-    collisionFilterMask: GROUP1 | GROUP2 | GROUP3
-  })
-  sphereBody.velocity.set(0, 0, -10)
-  world.addBody(sphereBody)
-  phyMeshes.push(sphereBody)
-
-  // 创建一个几何球体
-  const sphereGeometry = new THREE.SphereGeometry(0.5)
-  const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-  const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial)
-  sphereMesh.position.y = 8
-  scene.add(sphereMesh)
-  meshs.push(sphereMesh)
-
+// 创建物理球
+const sphereShape = new CANNON.Sphere(0.5)
+// 创建物理刚体
+const sphereBody = new CANNON.Body({
+  mass: 1,
+  position: new CANNON.Vec3(0, 5, 0),
+  shape: sphereShape,
+  material: boxMaterialCon,
+  collisionFilterGroup: GROUP2,
+  collisionFilterMask: GROUP1 | GROUP2 | GROUP3
 })
+sphereBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 1), Math.PI)
+// 将刚体添加到物理世界
+world.addBody(sphereBody)
+phyMeshes.push(sphereBody)
 
-// 创建扁平立方体
-const boxShape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.05))
-let previousBody
-// 循环创建1-个立方体 
-for (let i = 0; i < 10; i++) {
-  const boxBody = new CANNON.Body({
-    shape: boxShape,
-    mass: i === 0 ? 0 : 1,
-    material: boxMaterialCon,
-    position: new CANNON.Vec3(
-      0,
-      15 - i * 1.1,
-      0
-    ),
-    collisionFilterGroup: GROUP1,
-    collisionFilterMask: GROUP1 | GROUP2 | GROUP3
-  })
-  world.addBody(boxBody)
-  phyMeshes.push(boxBody)
-
-  const boxGeometry = new THREE.BoxGeometry(1, 1, 0.1)
-  const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-  const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial)
-  scene.add(boxMesh)
-  meshs.push(boxMesh)
-
-  // 创建一个约束
-  if (i > 0) {
-    const constraint = new CANNON.PointToPointConstraint(
-      boxBody,
-      new CANNON.Vec3(-0.5, 0.55, 0),
-      previousBody,
-      new CANNON.Vec3(-0.5, -0.55, 0),
-    )
-    world.addConstraint(constraint)
-
-    const constraint2 = new CANNON.PointToPointConstraint(
-      boxBody,
-      new CANNON.Vec3(0.5, 0.55, 0),
-      previousBody,
-      new CANNON.Vec3(0.5, -0.55, 0),
-    )
-    world.addConstraint(constraint2)
-  }
-  previousBody = boxBody
-}
+// 创建 3d球
+const sphereGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+sphereMesh.position.y = 5
+scene.add(sphereMesh);
+meshs.push(sphereMesh)
 
 // 渲染
 let clock = new THREE.Clock();
@@ -177,6 +129,24 @@ function animate() {
 
 animate();
 
+// 监听点击事件
+window.addEventListener("click", () => {
+  console.log(sphereBody.position);
+  // 添加 压力
+  // sphereBody.applyForce(new CANNON.Vec3(10, 0, 0), new CANNON.Vec3(0, -0.5, 0))
+  // sphereBody.applyLocalForce(new CANNON.Vec3(10, 0, 0), new CANNON.Vec3(0, -0.5, 0))
+  // 添加 脉冲
+  // sphereBody.applyImpulse(
+  //   new CANNON.Vec3(10 * (1 / 60), 0, 0),
+  //   new CANNON.Vec3(0, -0.5, 0)
+  // )
+  // sphereBody.applyLocalImpulse(
+  //   new CANNON.Vec3(10 * (1 / 60), 0, 0),
+  //   new CANNON.Vec3(0, -0.5, 0)
+  // )
+  // 扭矩
+  sphereBody.applyTorque(new CANNON.Vec3(0, 0, 10))
+})
 </script>
 
 <style>
