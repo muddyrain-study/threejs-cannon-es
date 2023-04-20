@@ -23,7 +23,7 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 50, 50);
+camera.position.set(0, 20, 20);
 
 // 初始化渲染器
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -44,222 +44,193 @@ let phyMeshes = []
 let meshes = []
 
 // 创建地面
-const groundShape = new CANNON.Plane();
-const groundBody = new CANNON.Body({
+const groundShape = new CANNON.Box(new CANNON.Vec3(50, 0.5, 50))
+let groundBody = new CANNON.Body({
   mass: 0,
   shape: groundShape,
-  material: new CANNON.Material(),
-});
-groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-world.addBody(groundBody);
-phyMeshes.push(groundBody);
+})
+world.addBody(groundBody)
 
+// threejs 地面
 const groundMesh = new THREE.Mesh(
-  new THREE.PlaneGeometry(100000, 100000),
+  new THREE.BoxGeometry(100, 0.5, 100),
   new THREE.MeshBasicMaterial({
-    color: 0x666666,
+    color: 0x888888,
   })
-);
-groundMesh.rotation.x = -Math.PI / 2;
-scene.add(groundMesh);
-meshes.push(groundMesh);
+)
+scene.add(groundMesh)
 
-// 创建车身子
-const chassisShape = new CANNON.Box(new CANNON.Vec3(5, 0.5, 2));
-const chassisBody = new CANNON.Body({
-  mass: 100,
+// 创建车身
+let chassisShape = new CANNON.Box(new CANNON.Vec3(2, 0.5, 1))
+let chassisBody = new CANNON.Body({
+  mass: 150,
   shape: chassisShape,
-  position: new CANNON.Vec3(0, 5, 0),
-});
-// world.addBody(chassisBody);
-phyMeshes.push(chassisBody);
+})
+chassisBody.position.set(0, 5, 0)
+world.addBody(chassisBody)
+phyMeshes.push(chassisBody)
 
-// threejs的车身
-const chassisMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(10, 1, 4),
+// 创建threejs车身
+let chassisMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(4, 1, 2),
   new THREE.MeshBasicMaterial({
-    color: 0x660066
+    color: 0xffffff,
   })
 )
-scene.add(chassisMesh);
-meshes.push(chassisMesh);
+scene.add(chassisMesh)
+meshes.push(chassisMesh)
 
-// 创建钢性的车子
-const vehicle = new CANNON.RigidVehicle({
-  chassisBody: chassisBody,
+// 创建 拥有悬架的车辆
+const vehicle = new CANNON.RaycastVehicle({
+  chassisBody
 })
 
+// 设置车轮配置
+const wheelOptions = {
+  // 车轮半径
+  radius: 0.5,
+  // 车轮宽度
+  directionLocal: new CANNON.Vec3(0, -1, 0),
+  // 设置悬架的刚度
+  suspensionStiffness: 30,
+  // 设置悬架的休息长度
+  suspensionRestLength: 0.3,
+  // 设置车轮的滑动摩擦力
+  frictionSlip: 1.4,
+  // 设置拉伸的阻尼
+  dampingRestitution: 2.3,
+  // 设置压缩的阻尼
+  dampingCompression: 4.4,
+  // 最大的悬架力
+  maxSuspensionForce: 100000,
+  // 设置最大的悬架行程
+  maxSuspensionTravel: 0.2,
+  // 设置车轮的转向轴
+  axleLocal: new CANNON.Vec3(0, 0, 1),
+}
 
-// 创建轮子
-// const wheelShape = new CANNON.Cylinder(0.5, 0.5, 1, 20)
-const wheelShape = new CANNON.Sphere(1.5)
-
-const wheelBody1 = new CANNON.Body({
-  mass: 1,
-  shape: wheelShape
-})
-vehicle.addWheel({
-  body: wheelBody1,
-  // 车轮方向
-  position: new CANNON.Vec3(-4, -0.5, 3.5),
-  // 旋转轴
-  axis: new CANNON.Vec3(0, 0, -1),
-  // 轮子方向
-  direction: new CANNON.Vec3(0, -1, 0),
-})
-// world.addBody(wheelBody1)
-phyMeshes.push(wheelBody1)
-
-// threejs 的车轮
-const wheelGeometry = new THREE.SphereGeometry(1.5, 8, 8)
-const wheelMaterial = new THREE.MeshBasicMaterial({
-  color: 0x660000,
-  wireframe: true
-})
-const wheelMesh1 = new THREE.Mesh(
-  wheelGeometry,
-  wheelMaterial
+// 添加车轮子
+vehicle.addWheel(
+  {
+    // 配置设置项
+    ...wheelOptions,
+    // 设置车轮的位置
+    chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, 1),
+  }
 )
-scene.add(wheelMesh1)
-meshes.push(wheelMesh1)
-
-const wheelBody2 = new CANNON.Body({
-  mass: 1,
-  shape: wheelShape
-})
-vehicle.addWheel({
-  body: wheelBody2,
-  // 车轮方向
-  position: new CANNON.Vec3(4, -0.5, 3.5),
-  // 旋转轴
-  axis: new CANNON.Vec3(0, 0, -1),
-  // 轮子方向
-  direction: new CANNON.Vec3(0, -1, 0),
-})
-// world.addBody(wheelBody2)
-phyMeshes.push(wheelBody2)
-
-// threejs 的车轮
-const wheelMesh2 = new THREE.Mesh(
-  wheelGeometry,
-  wheelMaterial
+// 添加车轮子
+vehicle.addWheel(
+  {
+    // 配置设置项
+    ...wheelOptions,
+    // 设置车轮的位置
+    chassisConnectionPointLocal: new CANNON.Vec3(-1, 0, -1),
+  }
 )
-scene.add(wheelMesh2)
-meshes.push(wheelMesh2)
-
-const wheelBody3 = new CANNON.Body({
-  mass: 1,
-  shape: wheelShape
-})
-vehicle.addWheel({
-  body: wheelBody3,
-  // 车轮方向
-  position: new CANNON.Vec3(-4, -0.5, -3.5),
-  // 旋转轴
-  axis: new CANNON.Vec3(0, 0, -1),
-  // 轮子方向
-  direction: new CANNON.Vec3(0, -1, 0),
-})
-// world.addBody(wheelBody3)
-phyMeshes.push(wheelBody3)
-
-// threejs 的车轮
-const wheelMesh3 = new THREE.Mesh(
-  wheelGeometry,
-  wheelMaterial
+// 添加车轮子
+vehicle.addWheel(
+  {
+    // 配置设置项
+    ...wheelOptions,
+    // 设置车轮的位置
+    chassisConnectionPointLocal: new CANNON.Vec3(1, 0, 1),
+  }
 )
-scene.add(wheelMesh3)
-meshes.push(wheelMesh3)
-
-const wheelBody4 = new CANNON.Body({
-  mass: 1,
-  shape: wheelShape
-})
-vehicle.addWheel({
-  body: wheelBody4,
-  // 车轮方向
-  position: new CANNON.Vec3(4, -0.5, -3.5),
-  // 旋转轴
-  axis: new CANNON.Vec3(0, 0, -1),
-  // 轮子方向
-  direction: new CANNON.Vec3(0, -1, 0),
-})
-// world.addBody(wheelBody4)
-phyMeshes.push(wheelBody4)
-
-// threejs 的车轮
-const wheelMesh4 = new THREE.Mesh(
-  wheelGeometry,
-  wheelMaterial
+// 添加车轮子
+vehicle.addWheel(
+  {
+    // 配置设置项
+    ...wheelOptions,
+    // 设置车轮的位置
+    chassisConnectionPointLocal: new CANNON.Vec3(1, 0, -1),
+  }
 )
-scene.add(wheelMesh4)
-meshes.push(wheelMesh4)
 
-// 设置完毕车身和所以车轮 将车子添加到世界中
 vehicle.addToWorld(world)
 
-// 轮胎压力
-const wheelForce = 100
-// 控制车子
-window.addEventListener("keydown", (event) => {
-  console.log(event.key);
-  switch (event.key) {
-    case "w": {
-      // 设置轮子力量
-      vehicle.setWheelForce(-wheelForce, 0)
-      vehicle.setWheelForce(-wheelForce, 2)
-      break;
-    }
-    case "s": {
-      // 设置轮子力量
-      vehicle.setWheelForce(wheelForce, 0)
-      vehicle.setWheelForce(wheelForce, 2)
-      break;
-    }
-    case "a": {
-      vehicle.setSteeringValue(Math.PI / 4, 0)
-      vehicle.setSteeringValue(Math.PI / 4, 2)
-      break;
-    }
-    case "d": {
-      vehicle.setSteeringValue(-Math.PI / 4, 0)
-      vehicle.setSteeringValue(-Math.PI / 4, 2)
-      break;
-    }
+// 创建 threejs 车轮
+const wheelBodies = []
 
+// 车辆形状
+const wheelShape = new CANNON.Cylinder(0.5, 0.5, 0.2, 20)
+const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 20)
+console.log(vehicle.wheelInfos);
+for (let i = 0; i < vehicle.wheelInfos.length; i++) {
+  const wheel = vehicle.wheelInfos[i]
+  const cylinderBody = new CANNON.Body({
+    mass: 0,
+    shape: wheelShape
+  })
+  cylinderBody.addShape(wheelShape);
+  // world.addBody(cylinderBody)
+  phyMeshes.push(cylinderBody)
+  wheelBodies.push(cylinderBody)
+  const wheelMaterial = new THREE.MeshBasicMaterial({ color: i === 2 || i === 3 ? 0xff0000 : 0x88ff88, wireframe: true })
+  const cylinderMesh = new THREE.Mesh(
+    wheelGeometry,
+    wheelMaterial
+  )
+  cylinderMesh.rotation.x = -Math.PI / 2
+  const wheelObj = new THREE.Object3D()
+  wheelObj.add(cylinderMesh)
+  scene.add(wheelObj)
+  meshes.push(wheelObj)
+}
+
+world.addEventListener("postStep", () => {
+  for (let i = 0; i < vehicle.wheelInfos.length; i++) {
+    vehicle.updateWheelTransform(i);
+    const t = vehicle.wheelInfos[i].worldTransform;
+    const wheelBody = wheelBodies[i];
+    wheelBody.position.copy(t.position);
+    wheelBody.quaternion.copy(t.quaternion);
+  }
+});
+
+const wheelForce = 2000
+window.addEventListener('keydown', event => {
+  if (event.key == "w") {
+    vehicle.applyEngineForce(wheelForce, 2);
+    vehicle.applyEngineForce(wheelForce, 3);
+  }
+  if (event.key == "s") {
+    vehicle.applyEngineForce(-wheelForce, 2);
+    vehicle.applyEngineForce(-wheelForce, 3);
+  }
+  if (event.key == "a") {
+    vehicle.setSteeringValue(Math.PI / 4, 2);
+    vehicle.setSteeringValue(Math.PI / 4, 3);
+  }
+  if (event.key == "d") {
+    vehicle.setSteeringValue(-Math.PI / 4, 2);
+    vehicle.setSteeringValue(-Math.PI / 4, 3);
+  }
+  // 按下r重置车辆
+  if (event.key == "r") {
+    chassisBody.velocity.set(0, 0, 0);
+    chassisBody.angularVelocity.set(0, 0, 0);
+    chassisBody.position.set(0, 10, 0);
+  }
+  // 空格刹车
+  if (event.key == " ") {
+    vehicle.setBrake(100, 0);
+    vehicle.setBrake(100, 1);
   }
 })
-
 window.addEventListener("keyup", (event) => {
-  console.log(event.key);
-  switch (event.key) {
-    case "w": {
-      // 设置轮子力量
-      vehicle.setWheelForce(0, 0)
-      vehicle.setWheelForce(0, 2);
-      break;
-    }
-    case "s": {
-      // 设置轮子力量
-      vehicle.setWheelForce(0, 0)
-      vehicle.setWheelForce(0, 2);
-      break;
-    }
-    case "a": {
-      vehicle.setSteeringValue(0, 0)
-      vehicle.setSteeringValue(0, 2)
-      break;
-
-    }
-    case "d": {
-      vehicle.setSteeringValue(0, 0)
-      vehicle.setSteeringValue(0, 2)
-      break;
-    }
-
+  if (event.key == "w" || event.key == "s") {
+    vehicle.applyEngineForce(0, 2);
+    vehicle.applyEngineForce(0, 3);
   }
-})
-
+  if (event.key == "a" || event.key == "d") {
+    vehicle.setSteeringValue(0, 2);
+    vehicle.setSteeringValue(0, 3);
+  }
+  if (event.key == " ") {
+    vehicle.setBrake(0, 0);
+    vehicle.setBrake(0, 1);
+  }
+});
 // 渲染
 let clock = new THREE.Clock();
 // 添加帧率检测器
